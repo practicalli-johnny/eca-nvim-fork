@@ -39,8 +39,6 @@ function Client:start_server(server_path, callback, opts)
     },
     workspaceFolders = { { uri = 'file://' .. vim.fn.getcwd() } },
   }, function(err, result)
-    vim.notify('ECA Server\n' .. vim.inspect(result), vim.log.levels.DEBUG)
-
     if err then
       self.server = nil
       return

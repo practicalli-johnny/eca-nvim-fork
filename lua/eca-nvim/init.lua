@@ -31,10 +31,6 @@ local function send_message(chat, client)
         content = '',
       })
     end)
-
-  if not ok then
-    vim.notify('ECA Server\n' .. response, vim.log.levels.DEBUG)
-  end
 end
 
 local function set_keymaps(chat, client)
@@ -49,7 +45,6 @@ end
 local function client_setup(chat)
   return function(message, err)
     if err then
-      vim.notify('ECA Server\n' .. err, vim.log.levels.DEBUG)
       return
     end
 
@@ -100,7 +95,6 @@ M.run = function()
   local ok, server_path = install.resolve_server_path()
 
   if not ok then
-    vim.notify(server_path, vim.log.levels.DEBUG)
     return
   end
 

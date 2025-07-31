@@ -43,8 +43,6 @@ local function request(url, opts)
       result = response
 
       if response and not vim.startswith(tostring(response.status), '20') then
-        vim.notify('Error fetching URL: ' .. url .. ' - ' .. (response.body or response.status),
-          vim.log.levels.DEBUG)
         ok = false
         result = response.body or response.status
         return
@@ -129,8 +127,6 @@ M.resolve_server_path = function()
     if not ok then
       return false, 'Failed to get latest ECA version: ' .. version
     end
-
-    vim.notify('Downloading ECA server version: ' .. version, vim.log.levels.DEBUG)
 
     local ok, response = download(version, artifact_name, server_path)
 

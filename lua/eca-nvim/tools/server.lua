@@ -41,8 +41,6 @@ function Server:connect(server_path, opts)
     server_command,
     {
       notification = function(method, params)
-        vim.notify('ECA Server\nUnknown notification method: ' .. method .. '\nParams: ' .. vim.inspect(params),
-          vim.log.levels.DEBUG, { timeout = 5000 })
         if method == 'chat/contentReceived' then
           if params.role == 'system' then
             if params.content.type == 'progress' then
@@ -59,25 +57,11 @@ function Server:connect(server_path, opts)
               opts.on_answer(params.content.text)
             end
           end
-        else
-          vim.notify('ECA Server\nUnknown notification method: ' .. method .. '\nParams: ' .. vim.inspect(params),
-            vim.log.levels.DEBUG, { timeout = 5000 })
         end
       end,
-      server_request = function(method, params)
-        vim.notify('ECA Server\nUnknown request method: ' .. method .. '\nParams: ' .. vim.inspect(params),
-          vim.log.levels.DEBUG, { timeout = 5000 })
-      end,
-      on_exit = function(code, _)
-        if code ~= 0 then
-          vim.notify('ECA Server exited with code: ' .. code,
-            vim.log.levels.DEBUG, { timeout = 5000 })
-        end
-      end,
-      on_error = function(_, data)
-        vim.notify('ECA Server Error\n' .. table.concat(data, " "),
-          vim.log.levels.DEBUG, { timeout = 5000 })
-      end,
+      server_request = function(method, params) end,
+      on_exit = function(code, _) end,
+      on_error = function(_, data) end,
     },
     {
       cwd = vim.fn.getcwd(),

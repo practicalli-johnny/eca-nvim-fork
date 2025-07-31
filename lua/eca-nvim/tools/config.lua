@@ -17,8 +17,6 @@ M.apply = function(opts)
   for key, value in pairs(opts) do
     if config[key] ~= nil then
       config[key] = value
-    else
-      vim.notify('Invalid configuration key: ' .. key, vim.log.levels.DEBUG)
     end
   end
 end
