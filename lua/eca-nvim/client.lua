@@ -1,3 +1,4 @@
+local config = require('eca-nvim.tools.config')
 local Server = require('eca-nvim.tools.server')
 
 local Client = {}
@@ -54,11 +55,13 @@ function Client:send_message(session_id, request_id, message, callback)
     return false, 'Client is not connected. Please connect the client first.'
   end
 
+  local model = config.get('model')
+
   local ok, response = self.server:request('chat/prompt', {
     chatId = session_id,
     requestId = request_id,
     message = message,
-    model = 'gpt-4.1',
+    model = model,
     behavior = 'chat',
     -- contexts =  '',
   }, callback)

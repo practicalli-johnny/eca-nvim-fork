@@ -1,3 +1,5 @@
+local config = require('eca-nvim.tools.config')
+
 local Server = {}
 
 function Server.new()
@@ -23,13 +25,20 @@ function Server:connect(server_path, opts)
     return
   end
 
-  self.rpc = vim.lsp.rpc.start(
-    {
+  local env = config.get('env')
+  local server_command = config.get('server_command')
+
+  if server_command and #server_command < 1 then
+    server_command = {
       '/usr/bin/java',
       '-jar',
       server_path,
       'server',
-    },
+    }
+  end
+
+  self.rpc = vim.lsp.rpc.start(
+    server_command,
     {
       notification = function(method, params)
         vim.notify('ECA Server\nUnknown notification method: ' .. method .. '\nParams: ' .. vim.inspect(params),
@@ -72,9 +81,7 @@ function Server:connect(server_path, opts)
     },
     {
       cwd = vim.fn.getcwd(),
-      env = {
-        OPENAI_API_KEY = "...openai_api_key...",
-      },
+      env = env
     }
   )
 end

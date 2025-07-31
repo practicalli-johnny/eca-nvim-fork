@@ -19,6 +19,13 @@ use({
   requires = {
     { 'nvim-lua/plenary.nvim' },
   },
+  config = function()
+    require('eca-nvim').setup({
+      env = {
+        OPENAI_API_KEY = "openai_api_key_here", -- Set your OpenAI API key here from => https://platform.openai.com/settings/organization/api-keys
+      },
+    })
+  end
 })
 ```
 
@@ -30,6 +37,13 @@ use({
   requires = {
     { 'nvim-lua/plenary.nvim' },
   },
+  config = function()
+    require('eca-nvim').setup({
+      env = {
+        OPENAI_API_KEY = "openai_api_key_here", -- Set your OpenAI API key here from => https://platform.openai.com/settings/organization/api-keys
+      },
+    })
+  end
 })
 ```
 
@@ -45,11 +59,7 @@ To start the `eca-nvim` plugin, run the following command in Neovim:
 :lua require('eca-nvim').run()
 ```
 
-This command will install `eca` within the plugin directory if it's not already present. Note that this process can introduce UI lag since the asynchronous handling of this request is not yet implemented. In case of any issues, you can manually download eca. Ensure that you have Java installed at `/usr/bin/java`, or update the startup command in `server.lua`.
-
-### API Key Setup
-
-To use the plugin, set your OpenAI API key in the `OPENAI_API_KEY` environment variable at `server.lua`. You can generate an API key from [OpenAI's platform](https://platform.openai.com/settings/organization/api-keys).
+This command will install `eca` within the plugin directory if it's not already present. Note that this process can introduce UI lag since the asynchronous handling of this request is not yet implemented. In case of any issues, you can manually download eca. Ensure that you have Java installed at `/usr/bin/java`, or update the startup command (see `config.lua` file).
 
 ## Contribution
 

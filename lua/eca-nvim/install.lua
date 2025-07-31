@@ -1,5 +1,6 @@
 local async = require('plenary.async')
 local curl = require('plenary.curl')
+local config = require('eca-nvim.tools.config')
 
 local M = {}
 
@@ -112,6 +113,12 @@ local function file_exists(filename)
 end
 
 M.resolve_server_path = function()
+  local server_command = config.get('server_command')
+
+  if server_command and #server_command > 0 then
+    return true, server_command
+  end
+
   local artifact_name = 'eca.jar'
   local extension_path = vim.api.nvim_get_runtime_file('lua/eca-nvim', false)[1]
   local server_path = extension_path .. '/' .. artifact_name

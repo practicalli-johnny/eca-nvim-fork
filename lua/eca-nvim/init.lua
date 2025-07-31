@@ -1,5 +1,6 @@
 local Chat = require("eca-nvim.ui.chat")
 local Client = require("eca-nvim.client")
+local config = require("eca-nvim.tools.config")
 local install = require("eca-nvim.install")
 
 local M = {}
@@ -7,8 +8,8 @@ local M = {}
 local index = 0
 
 local function increment_and_return()
-    index = index + 1
-    return index
+  index = index + 1
+  return index
 end
 
 local function send_message(chat, client)
@@ -107,6 +108,10 @@ M.run = function()
   local client = Client.connect(server_path, client_setup(chat), client_opts(chat))
 
   set_keymaps(chat, client)
+end
+
+M.setup = function(opts)
+  config.apply(opts or {})
 end
 
 return M
