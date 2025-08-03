@@ -1,87 +1,136 @@
-local config = require('eca-nvim.tools.config')
+local async = require('plenary.async')
+local curl = require('plenary.curl')
 
-local Server = {}
+local M = {}
 
-function Server.new()
-  local instance = {
-    rpc = nil,
-  }
+local function request(url, opts)
+  local result = nil
+  local ok = false
 
-  setmetatable(instance, { __index = Server })
+  pcall(async.run,
+    function()
+      local curl_args = {
+        timeout = 30000,
+        raw = {
+          '--retry',
+          '2',
+          '--retry-delay',
+          '1',
+          '--keepalive-time',
+          '60',
+          '--no-compressed',
+          '--connect-timeout',
+          '10',
+          '--tcp-nodelay',
+          '--no-buffer',
+        },
+      }
 
-  return instance
+      local args = {
+        on_error = function(output)
+          return false, output and output.stderr or output
+        end,
+      }
+
+      args = vim.tbl_deep_extend('force', curl_args, args)
+      args = vim.tbl_deep_extend('force', args, opts or {})
+
+      return curl.get(url, args), args
+    end,
+    function(response, args)
+      ok = true
+      result = response
+
+      if response and not vim.startswith(tostring(response.status), '20') then
+        ok = false
+        result = response.body or response.status
+        return
+      end
+
+      if not args.json_response then
+        return
+      end
+
+      local body, not_ok = vim.json.decode(tostring(response.body))
+
+      if not_ok then
+        ok = false
+        return
+      end
+
+      ok = true
+      result = body
+    end)
+
+  return ok, result
 end
 
-function Server.start(server_path, opts)
-  local server = Server.new()
+local function get_latest_version()
+  local ok, response = request('https://api.github.com/repos/editor-code-assistant/eca/releases',
+    { json_response = true })
 
-  server:connect(server_path, opts)
+  if ok and response and #response > 0 then
+    if response[1].tag_name and response[1].tag_name ~= '' then
+      return true, response[1].tag_name
+    end
+  end
 
-  return server
+  return false, nil
 end
 
-function Server:connect(server_path, opts)
-  if self.rpc then
-    return
-  end
+local function download(version, artifactName, download_path)
+  local url = 'https://github.com/editor-code-assistant/eca/releases/download/' .. version .. '/' .. artifactName
 
-  local env = config.get('env')
-  local server_command = config.get('server_command')
-
-  if server_command and #server_command < 1 then
-    server_command = {
-      '/usr/bin/java',
-      '-jar',
-      server_path,
-      'server',
-    }
-  end
-
-  self.rpc = vim.lsp.rpc.start(
-    server_command,
-    {
-      notification = function(method, params)
-        if method == 'chat/contentReceived' then
-          if params.role == 'system' then
-            if params.content.type == 'progress' then
-              if params.content.state == 'running' then
-                opts.on_running(params.content.text)
-              elseif params.content.state == 'finished' then
-                opts.on_finished(params.content.text)
-              end
-            end
-          end
-
-          if params.role == 'assistant' then
-            if params.content.type == 'text' then
-              opts.on_answer(params.content.text)
-            end
-          end
-        end
-      end,
-      server_request = function(method, params) end,
-      on_exit = function(code, _) end,
-      on_error = function(_, data) end,
-    },
-    {
-      cwd = vim.fn.getcwd(),
-      env = env
-    }
-  )
-end
-
-function Server:request(method, params, callback)
-  if not self.rpc then
-    return false, 'RPC is not started.'
-  end
-
-  local ok, request_id = self.rpc.request(method, params, callback)
+  local ok, response = request(url, { output = download_path })
 
   if not ok then
-    return false, 'RPC request failed: ' .. method .. '\nParams: ' .. vim.inspect(params)
+    return false, 'Failed to download ECA from ' .. url .. '' .. ':\n' .. response
   end
 
-  return true, request_id
+  if vim.fn.fnamemodify(download_path, ":e") ~= '' then
+    local chmod_out = vim.fn.system { 'chmod', '755', download_path }
+
+    if vim.v.shell_error ~= 0 then
+      return false, 'Failed to set executable permissions for ' .. download_path .. ':\n' .. chmod_out
+    end
+  end
+
+  return true, download_path
 end
 
-return Server
+local function file_exists(filename)
+  local f = io.open(filename, "r") -- Attempt to open the file in read mode
+
+  if f then
+    io.close(f) -- Close the file if successfully opened
+    return true
+  end
+
+  return false
+end
+
+M.get_path = function()
+  local artifact_name = 'eca.jar'
+  local extension_path = vim.api.nvim_get_runtime_file('lua/eca-nvim', false)[1]
+  local server_path = extension_path .. '/' .. artifact_name
+
+  if not file_exists(server_path) then
+    local ok, version = get_latest_version()
+
+    if not ok then
+      return false, 'Failed to get latest ECA version: ' .. version
+    end
+
+    local ok, response = download(version, artifact_name, server_path)
+
+    if not ok then
+      return false, 'Failed to download ECA server: ' .. response
+    end
+
+    server_path = response
+  end
+
+  return true, server_path
+end
+
+return M

@@ -18,8 +18,8 @@ function Chat.new(config)
       separator = config.separator or '---',
       window = config.window or {
         layout = 'vertical', -- 'vertical' or 'horizontal'
-        width = 0.5,         -- fractional width of parent, or absolute width in columns when > 1
-        height = 0.5,        -- fractional height of parent, or absolute height in rows when > 1
+        width = 0.4,         -- fractional width of parent, or absolute width in columns when > 1
+        height = 0.4,        -- fractional height of parent, or absolute height in rows when > 1
       },
     },
     header_ns = vim.api.nvim_create_namespace('eca-chat-headers'),
@@ -46,6 +46,7 @@ function Chat:create_buffer()
 
   vim.bo[self.bufnr].filetype = self.name
   vim.bo[self.bufnr].modifiable = false
+
   vim.api.nvim_buf_set_name(self.bufnr, self.name)
 
   return self.bufnr
@@ -175,7 +176,6 @@ function Chat:render()
         table.concat(vim.list_slice(lines, current_message.section.start_line, current_message.section.end_line), '\n')
       )
     end
-
   end
 
   self.messages = new_messages

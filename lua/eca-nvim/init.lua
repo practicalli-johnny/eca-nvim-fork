@@ -1,111 +1,59 @@
-local Chat = require("eca-nvim.ui.chat")
-local Client = require("eca-nvim.client")
-local config = require("eca-nvim.tools.config")
-local install = require("eca-nvim.install")
+local Handler  = require('eca-nvim.handler')
+local Chat     = require('eca-nvim.ui.chat')
+local Client   = require('eca-nvim.protocols.client')
+local ECA      = require('eca-nvim.protocols.eca')
+local Executor = require('eca-nvim.protocols.executor')
+local config   = require('eca-nvim.tools.config')
+local server   = require('eca-nvim.tools.server')
+local log      = require('eca-nvim.tools.log')
 
-local M = {}
+local M        = {}
 
-local index = 0
-
-local function increment_and_return()
-  index = index + 1
-  return index
+function M.setup(opts)
+  config.apply(opts or {})
 end
 
-local function send_message(chat, client)
-  local message = chat:get_closest_message('user')
+function M.run()
+  local custom_server_config = config.get('server') or {}
+  local start_command        = custom_server_config and custom_server_config.command
+  local spawn_args           = custom_server_config and custom_server_config.spawn_args
 
-  if not message then
-    return
-  end
+  if not (type(start_command) == 'table' and #start_command > 0) then
+    local ok, server_path = server.get_path()
 
-  local ok, response = client:send_message(1, index, message.content,
-    function(_, _)
-      chat:lock()
-
-      chat:append('\n')
-
-      chat:add_message({
-        id = increment_and_return(),
-        role = "assistant",
-        content = '',
-      })
-    end)
-end
-
-local function set_keymaps(chat, client)
-  vim.keymap.set(
-    'n',
-    '<CR>',
-    function() send_message(chat, client) end,
-    { buffer = chat.bufnr, nowait = true, desc = 'ECA Submit Prompt' }
-  )
-end
-
-local function client_setup(chat)
-  return function(message, err)
-    if err then
+    if not ok then
       return
     end
 
-    chat:lock()
-
-    chat:add_message({
-      id = increment_and_return(),
-      role = "assistant",
-      content = message.chatWelcomeMessage,
-    })
-
-    chat:add_message({
-      id = increment_and_return(),
-      role = "user",
-      content = '',
-    })
-
-    chat:unlock()
-  end
-end
-
-local function client_opts(chat)
-  return
-  {
-    on_running = function(_)
-      if not chat:is_locked() then
-        chat:lock()
-      end
-    end,
-    on_finished = function(_)
-      chat:append('\n')
-
-      chat:add_message({
-        id = increment_and_return(),
-        role = "user",
-        content = '',
-      })
-
-      chat:unlock()
-    end,
-    on_answer = function(text)
-      chat:append(text)
-    end
-  }
-end
-
-M.run = function()
-  local ok, server_path = install.resolve_server_path()
-
-  if not ok then
-    return
+    start_command = { '/usr/bin/java', '-jar', server_path, 'server' }
   end
 
-  local chat = Chat.open({})
-  local client = Client.connect(server_path, client_setup(chat), client_opts(chat))
+  if type(spawn_args) ~= 'table' then
+    spawn_args = {}
+  end
 
-  set_keymaps(chat, client)
-end
+  local eca      = ECA.new()
+  local chat     = Chat.open({})
+  local client   = Client.new { server = { cmd = start_command, args = spawn_args } }
+  local executor = Executor.new()
+  local logger   = log.get_logger(config.get('log'))
 
-M.setup = function(opts)
-  config.apply(opts or {})
+  if logger and type(logger.filepath) == "string" and logger.filepath ~= "" then
+    vim.api.nvim_create_user_command("EcaLogs", function()
+      vim.cmd('tabedit ' .. vim.fn.fnameescape(logger.filepath))
+    end, {})
+  end
+
+  local handler = Handler.new(eca, chat, client, executor, logger)
+
+  local function set_submit_prompt_keymap(callback)
+    vim.keymap.set(
+      'n', '<CR>', callback,
+      { buffer = chat.bufnr, nowait = true, desc = 'ECA Submit Prompt' }
+    )
+  end
+
+  handler:init(set_submit_prompt_keymap)
 end
 
 return M
