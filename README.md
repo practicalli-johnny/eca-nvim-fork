@@ -9,6 +9,25 @@
 
 ## Installation
 
+### Using Lazy.nvim
+
+Plugin spec to install eca-nvim via [lazy.nvim](https://github.com/folke/lazy.nvim). The spec will lazy load the plugin, loading only when a Clojure related file is opened.
+
+Create an environment variable within your operating system called `OPENAI_API_KEY` and set it to the value of your OpenAI key.
+
+```lua
+return {
+  "editor-code-assistant/eca-nvim",
+  dependencies = {
+    "nvim-lua/plenary.nvim",
+  },
+  ft = { "clojure" },  -- lazy load, only run when Clojure file type is opened
+  opts = {
+    env = {OPENAI_API_KEY = vim.env.OPENAI_API_KEY},  -- set key from OS Env Var of same name
+  },
+}
+```
+
 ### Using Packer
 
 To install `eca-nvim` with Packer, add the following to your Neovim configuration:
