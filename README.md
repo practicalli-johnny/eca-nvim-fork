@@ -84,4 +84,4 @@ By default, the plugin uses Java at `/usr/bin/java`. If your Java installation i
 
 ## Contribution
 
-Since this project is in the early stages, contributions and feedback are welcome. Stay tuned for more updates and improvements as we continue development.
+Since this project is in the early stages, contributions and feedback are welcome. See [Architecture Documentation](docs/architecture.md) to understand the project structure and be able to contribute. Stay tuned for more updates and improvements as we continue development.
